@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { FaGithub } from 'react-icons/fa';
 import { pipeline } from '@xenova/transformers';
+import Script from 'next/script'; // If you're using Next.js
 
 export default function FormPage() {
   const [gradeLevel, setGradeLevel] = useState('');
@@ -15,6 +16,27 @@ export default function FormPage() {
   const [sentiment, setSentiment] = useState<{ label: string; score: number } | null>(null);
   const [sentimentLoading, setSentimentLoading] = useState(false);
 
+  // Client data state
+  const [clientData, setClientData] = useState<any>({});
+
+  // Collect client data
+  useEffect(() => {
+    const getClientData = () => {
+      const data = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        screenResolution: `${window.screen.width}x${window.screen.height}`,
+        viewportSize: `${window.innerWidth}x${window.innerHeight}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        referrer: document.referrer,
+      };
+      setClientData(data);
+    };
+    getClientData();
+  }, []);
+
+
   // Run inference on opinion change
   useEffect(() => {
     const runInference = async () => {
@@ -26,11 +48,11 @@ export default function FormPage() {
       try {
         const pipe = await pipeline(
             'text-classification',
-            'Xenova/twitter-roberta-base-sentiment-latest'
+            'Xenova/twitter-roberta-base-sentiment-latest',
         );
         const result = await pipe(opinion);
-        console.log(result)
-        setSentiment((result as never)[0])
+        console.log(result);
+        setSentiment((result as any)[0]);
       } catch (error) {
         console.error('Inference failed:', error);
       }
@@ -57,6 +79,7 @@ export default function FormPage() {
           opinion,
           nameOption,
           name: nameOption === 'provide' ? name : 'Anonymous',
+          clientData, // Include client data
         }),
       });
       if (!response.ok) {
@@ -73,7 +96,7 @@ export default function FormPage() {
   const getProgressBarWidth = () => {
     if (!sentiment) return '0%';
     if (sentiment.label === 'positive') {
-      return `${(sentiment.score * 50) + 50}%`; // Scale positive scores to 50-100%
+      return `${sentiment.score * 50 + 50}%`; // Scale positive scores to 50-100%
     } else if (sentiment.label === 'negative') {
       return `${(1 - sentiment.score) * 50}%`; // Scale negative scores to 0-50%
     } else {
@@ -83,11 +106,38 @@ export default function FormPage() {
 
   return (
       <div className="flex flex-col min-h-screen bg-gray-900 text-white">
-        {/* Form Content */}
+        {/* Google Analytics Script */}
+        <Script
+            strategy="afterInteractive"
+            src={`https://www.googletagmanager.com/gtag/js?id=YOUR_GOOGLE_ANALYTICS_TRACKING_ID`}
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){window.dataLayer.push(arguments);}
+          gtag('js', new Date());
+        
+          gtag('config', 'YOUR_GOOGLE_ANALYTICS_TRACKING_ID');
+        `}
+        </Script>
+
+        {/* Main Content */}
         <main className="flex-grow flex items-center justify-center px-6">
           {!submitted ? (
               <div className="bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-lg border border-gray-700">
                 <h1 className="text-4xl font-extrabold mb-8 text-center">Share Your Thoughts</h1>
+                {/* Google AdSense Ad */}
+                <div className="mb-6 flex justify-center">
+                  <ins
+                      className="adsbygoogle"
+                      style={{ display: 'block', textAlign: 'center' }}
+                      data-ad-client="ca-pub-7509088958653785"
+                      data-ad-slot="YOUR_ADSENSE_SLOT_ID"
+                      data-ad-format="auto"
+                      data-full-width-responsive="true"
+                  ></ins>
+                </div>
+
                 <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
                   <div>
                     <label className="block text-lg font-medium mb-2">Grade Level</label>
@@ -122,7 +172,13 @@ export default function FormPage() {
                             <div className="mt-4">
                               <div className="w-full bg-gray-600 rounded-full h-4">
                                 <div
-                                    className={`h-4 rounded-full ${sentiment.label === 'positive' ? 'bg-green-500' : sentiment.label === 'negative' ? 'bg-red-500' : 'bg-yellow-500'}`}
+                                    className={`h-4 rounded-full ${
+                                        sentiment.label === 'positive'
+                                            ? 'bg-green-500'
+                                            : sentiment.label === 'negative'
+                                                ? 'bg-red-500'
+                                                : 'bg-yellow-500'
+                                    }`}
                                     style={{ width: getProgressBarWidth(), transition: 'width 0.5s ease' }}
                                 ></div>
                               </div>
@@ -202,14 +258,33 @@ export default function FormPage() {
         {/* Footer */}
         <footer className="bg-gray-800 py-6 mt-12">
           <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-center md:text-left mb-4 md:mb-0">&copy; 2024 Opinion Survey. All rights reserved.</p>
+            <p className="text-gray-400 text-center md:text-left mb-4 md:mb-0">
+              &copy; 2024 Opinion Survey. All rights reserved.
+            </p>
             <div className="flex space-x-6">
-              <a href="https://github.com/your-repo" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
+              <a
+                  href="https://github.com/dulatello08"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-400 hover:text-white"
+              >
                 <FaGithub size={24} />
               </a>
             </div>
           </div>
         </footer>
+
+        {/* Google AdSense Script */}
+        <Script
+            async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7509088958653785"
+            crossOrigin="anonymous"
+        />
+        <Script id="adsense-script" strategy="afterInteractive">
+          {`
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        `}
+        </Script>
       </div>
   );
 }

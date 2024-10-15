@@ -30,7 +30,7 @@ export default function FormPage() {
         );
         const result = await pipe(opinion);
         console.log(result)
-        setSentiment((result as any)[0])
+        setSentiment((result as never)[0])
       } catch (error) {
         console.error('Inference failed:', error);
       }

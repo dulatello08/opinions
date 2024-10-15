@@ -3,26 +3,41 @@
 import { useState, useEffect } from 'react';
 import { FaGithub } from 'react-icons/fa';
 import { pipeline } from '@xenova/transformers';
-import Script from 'next/script'; // If you're using Next.js
+import Script from 'next/script';
+
+interface Sentiment {
+  label: 'positive' | 'negative' | 'neutral';
+  score: number;
+}
+
+interface ClientData {
+  userAgent: string;
+  platform: string;
+  language: string;
+  screenResolution: string;
+  viewportSize: string;
+  timezone: string;
+  referrer: string;
+}
 
 export default function FormPage() {
-  const [gradeLevel, setGradeLevel] = useState('');
-  const [opinion, setOpinion] = useState('');
-  const [nameOption, setNameOption] = useState('');
-  const [name, setName] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [gradeLevel, setGradeLevel] = useState<string>('');
+  const [opinion, setOpinion] = useState<string>('');
+  const [nameOption, setNameOption] = useState<string>('');
+  const [name, setName] = useState<string>('');
+  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [sentiment, setSentiment] = useState<{ label: string; score: number } | null>(null);
-  const [sentimentLoading, setSentimentLoading] = useState(false);
+  const [sentiment, setSentiment] = useState<Sentiment | null>(null);
+  const [sentimentLoading, setSentimentLoading] = useState<boolean>(false);
 
   // Client data state
-  const [clientData, setClientData] = useState<unknown>({});
+  const [clientData, setClientData] = useState<ClientData | null>(null);
 
   // Collect client data
   useEffect(() => {
     const getClientData = () => {
-      const data = {
+      const data: ClientData = {
         userAgent: navigator.userAgent,
         platform: navigator.platform,
         language: navigator.language,
@@ -35,7 +50,6 @@ export default function FormPage() {
     };
     getClientData();
   }, []);
-
 
   // Run inference on opinion change
   useEffect(() => {
@@ -52,7 +66,7 @@ export default function FormPage() {
         );
         const result = await pipe(opinion);
         console.log(result);
-        setSentiment((result as never)[0]);
+        setSentiment(result[0] as Sentiment);
       } catch (error) {
         console.error('Inference failed:', error);
       }
@@ -93,7 +107,7 @@ export default function FormPage() {
     }
   };
 
-  const getProgressBarWidth = () => {
+  const getProgressBarWidth = (): string => {
     if (!sentiment) return '0%';
     if (sentiment.label === 'positive') {
       return `${sentiment.score * 50 + 50}%`; // Scale positive scores to 50-100%
@@ -107,17 +121,13 @@ export default function FormPage() {
   return (
       <div className="flex flex-col min-h-screen bg-gray-900 text-white">
         {/* Google Analytics Script */}
-        <Script
-            strategy="afterInteractive"
-            src={`https://www.googletagmanager.com/gtag/js?id=YOUR_GOOGLE_ANALYTICS_TRACKING_ID`}
-        />
+        <Script strategy="afterInteractive" src="https://www.googletagmanager.com/gtag/js?id=G-4BYWX32D7N" />
         <Script id="google-analytics" strategy="afterInteractive">
           {`
           window.dataLayer = window.dataLayer || [];
-          function gtag(){window.dataLayer.push(arguments);}
+          function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-        
-          gtag('config', 'YOUR_GOOGLE_ANALYTICS_TRACKING_ID');
+          gtag('config', 'G-4BYWX32D7N');
         `}
         </Script>
 

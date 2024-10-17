@@ -57,7 +57,7 @@ async function POST(request: Request): Promise<Response> {
               <div class="w-11/12 md:w-8/12 lg:w-6/12 p-8 flex flex-col bg-white bg-opacity-90 rounded-2xl shadow-2xl" style="backdrop-filter: blur(10px);">
                 <!-- Fake Twitter Header -->
                 <div class="flex items-center mb-4">
-                  <img src="https://upload.wikimedia.org/wikipedia/sco/9/9f/Twitter_bird_logo_2012.svg" alt="Twitter Logo" class="w-8 h-8 mr-3">
+                  <img src="https://upload.wikimedia.org/wikipedia/sco/9/9f/Twitter_bird_logo_2012.svg" alt="Twitter Logo" class="w-8 h-8 m-3">
                   <div>
                     <div class="text-xl font-bold text-gray-900">${name}</div>
                     <div class="text-sm text-gray-500">@${name.toLowerCase().replace(/\s+/g, '')}</div>

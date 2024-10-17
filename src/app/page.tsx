@@ -157,10 +157,10 @@ export default function FormPage() {
                         onChange={(e) => setGradeLevel(e.target.value)}
                     >
                       <option value="">Select your grade level</option>
-                      <option value="freshman">Freshman</option>
-                      <option value="sophomore">Sophomore</option>
-                      <option value="junior">Junior</option>
-                      <option value="senior">Senior</option>
+                      <option value="Freshman">Freshman</option>
+                      <option value="Sophomore">Sophomore</option>
+                      <option value="Junior">Junior</option>
+                      <option value="Senior">Senior</option>
                     </select>
                   </div>
 

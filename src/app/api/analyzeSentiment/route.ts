@@ -5,6 +5,9 @@ import { pipeline } from '@huggingface/transformers';
 const cache: { [key: string]: any } = {};
 
 export async function POST(request: Request) {
+    const abortController = new AbortController();  // Create an AbortController
+    const { signal } = abortController;  // Get the AbortSignal from the controller
+
     try {
         const { opinion } = await request.json();
 
@@ -22,15 +25,30 @@ export async function POST(request: Request) {
 
         // Load the sentiment analysis pipeline
         const pipe = await pipeline('text-classification', 'Xenova/twitter-roberta-base-sentiment-latest', { dtype: 'uint8' });
-        const result = await pipe(opinion);
-        console.log(result);
 
-        // Cache the result before returning it
+        // Watch for the client abort signal to prevent wasting resources
+        if (signal.aborted) {
+            console.log('Request was aborted by the client.');
+            return NextResponse.json(
+                { error: 'Request aborted by client.' },
+                { status: 499 }  // 499 status for client closed request
+            );
+        }
+
+        // Run the analysis and cache the result
+        const result = await pipe(opinion);
+        console.log(result)
         cache[opinion] = result[0];
 
-        // Return the first result as the sentiment analysis
         return NextResponse.json(result[0]);
     } catch (error) {
+        if (signal.aborted) {
+            console.log('Server aborted processing due to client request cancellation.');
+            return NextResponse.json(
+                { error: 'Server aborted processing due to client cancellation.' },
+                { status: 499 }
+            );
+        }
         console.error('Error analyzing sentiment:', error);
         return NextResponse.json(
             { error: 'Failed to analyze sentiment.' },

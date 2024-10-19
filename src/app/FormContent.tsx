@@ -99,7 +99,7 @@ export default function FormContent() {
                 if (latestOpinionRef.current === opinion) {
                     setSentiment(result);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 if (error.name !== 'AbortError') {
                     console.error('Inference failed:', error);
                 }

@@ -30,13 +30,10 @@ export default function FormContent() {
     const [clientData, setClientData] = useState<ClientData | null>(null);
 
     // To track the latest fetch request
-    const abortControllerRef = useRef<AbortController | null>(null);
+    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // To keep track of whether the response should be shown or discarded
     const latestOpinionRef = useRef<string>(opinion);
-
-    // Debounce timer
-    let debounceTimer: ReturnType<typeof setTimeout>;
 
     // Collect client data
     useEffect(() => {
@@ -57,25 +54,19 @@ export default function FormContent() {
 
     // Run sentiment analysis with debounce and request cancellation
     useEffect(() => {
-        // Clear any previously set debounce timer
-        clearTimeout(debounceTimer);
+        // Clear the debounce timer if it's set
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current);
+        }
 
+        // Reset sentiment if the opinion is empty
         if (opinion.trim() === '') {
             setSentiment(null);
             return;
         }
 
-        // Set debounce timer (500ms)
-        debounceTimer = setTimeout(async () => {
-            // Abort any previous request if a new one is initiated
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-
-            // Create a new AbortController for the current request
-            const abortController = new AbortController();
-            abortControllerRef.current = abortController;
-
+        // Set a new debounce timer (500ms)
+        debounceTimerRef.current = setTimeout(async () => {
             // Save the latest opinion to check if the response should be processed
             latestOpinionRef.current = opinion;
 
@@ -86,23 +77,23 @@ export default function FormContent() {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ opinion }),
-                    signal: abortController.signal, // Attach the AbortController
                 });
 
                 if (!response.ok) {
                     throw new Error('Sentiment analysis failed');
                 }
 
-                const result: Sentiment = await response.json();
+                let result: Sentiment = await response.json();
+                if (!result.label) {
+                    result = { label: 'neutral', score: 0 };
+                }
 
                 // Only update sentiment if the input has not changed since the request was initiated
                 if (latestOpinionRef.current === opinion) {
                     setSentiment(result);
                 }
-            } catch (error: any) {
-                if (error.name !== 'AbortError') {
-                    console.error('Inference failed:', error);
-                }
+            } catch (error) {
+                console.error('Inference failed:', error);
             }
         }, 500); // Adjust debounce delay as needed
     }, [opinion]);

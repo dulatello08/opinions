@@ -1,54 +1,53 @@
 import { NextResponse } from 'next/server';
 import { pipeline } from '@huggingface/transformers';
 
-// Initialize an in-memory cache (simple JavaScript object)
-const cache: { [key: string]: any } = {};
+// In-memory cache with a simple LRU policy (optional)
+const cache = new Map();
+const MAX_CACHE_SIZE = 100; // Adjust as needed
 
 export async function POST(request: Request) {
-    const abortController = new AbortController();  // Create an AbortController
-    const { signal } = abortController;  // Get the AbortSignal from the controller
-
     try {
-        const { opinion } = await request.json();
-
-        if (!opinion || typeof opinion !== 'string') {
+        const requestBody = await request.text(); // Get the raw text of the body
+        if (!requestBody) {
             return NextResponse.json(
-                { error: 'Invalid input. Opinion must be a non-empty string.' },
+                { error: 'Request body is empty or invalid.' },
+                { status: 400 }
+            );
+        }
+
+        const parsedData = JSON.parse(requestBody); // Manually parse JSON
+        const { opinion } = parsedData;
+
+        // Handle undefined, null, or empty opinion
+        if (!opinion || typeof opinion !== 'string' || opinion.trim() === '') {
+            return NextResponse.json(
+                { message: 'No valid opinion provided. Please enter a valid opinion.' },
                 { status: 400 }
             );
         }
 
         // Check if the result is already cached
-        if (cache[opinion]) {
-            return NextResponse.json(cache[opinion]);
+        if (cache.has(opinion)) {
+            return NextResponse.json(cache.get(opinion));
         }
 
         // Load the sentiment analysis pipeline
         const pipe = await pipeline('text-classification', 'Xenova/twitter-roberta-base-sentiment-latest', { dtype: 'uint8' });
 
-        // Watch for the client abort signal to prevent wasting resources
-        if (signal.aborted) {
-            console.log('Request was aborted by the client.');
-            return NextResponse.json(
-                { error: 'Request aborted by client.' },
-                { status: 499 }  // 499 status for client closed request
-            );
-        }
-
-        // Run the analysis and cache the result
+        // Run the inference
         const result = await pipe(opinion);
-        console.log(result)
-        cache[opinion] = result[0];
+        const response = result[0];
 
-        return NextResponse.json(result[0]);
-    } catch (error) {
-        if (signal.aborted) {
-            console.log('Server aborted processing due to client request cancellation.');
-            return NextResponse.json(
-                { error: 'Server aborted processing due to client cancellation.' },
-                { status: 499 }
-            );
+        // Cache the result
+        cache.set(opinion, response);
+        if (cache.size > MAX_CACHE_SIZE) {
+            // Remove the oldest entry
+            const firstKey = cache.keys().next().value;
+            cache.delete(firstKey);
         }
+
+        return NextResponse.json(response);
+    } catch (error) {
         console.error('Error analyzing sentiment:', error);
         return NextResponse.json(
             { error: 'Failed to analyze sentiment.' },

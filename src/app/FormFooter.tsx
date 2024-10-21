@@ -9,7 +9,7 @@ export default function FormFooter() {
                 </p>
                 <div className="flex space-x-6">
                     <a
-                        href="https://github.com/dulatello08"
+                        href="https://github.com/dulatello08/opinions"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-white"

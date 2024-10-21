@@ -29,6 +29,7 @@ const getNextImageFilename = async (dirPath: string): Promise<string> => {
     return `${dirPath}/${filename}`;
 };
 
+
 async function POST(request: Request): Promise<Response> {
     console.log('API hit');
     try {
@@ -36,7 +37,7 @@ async function POST(request: Request): Promise<Response> {
         const puppeteer = await import('puppeteer');
 
         const body = await request.json();
-        const { opinion, gradeLevel, name, clientData } = body;
+        const { opinion, gradeLevel, name, clientData, sentiment } = body;
 
         // Extract the IP address from the request headers (if available)
         const ipAddress =
@@ -51,6 +52,22 @@ async function POST(request: Request): Promise<Response> {
         // Generate a hash-based pixel background pattern
         const backgroundPattern = generateAdvancedArtisticBackgroundPattern(opinion);
 
+        // Calculate sentiment score using provided sentiment object
+        const { label } = sentiment;
+        const sentimentClass = label === 'positive' ? 2 : label === 'negative' ? 0 : 1;
+
+        const getProgressBarWidth = (): string => {
+            if (!sentiment) return '0%';
+            if (sentiment.label === 'positive') {
+                return `${sentiment.score * 50 + 50}%`; // Scale positive scores to 50-100%
+            } else if (sentiment.label === 'negative') {
+                return `${(1 - sentiment.score) * 50}%`; // Scale negative scores to 0-50%
+            } else {
+                return '50%'; // Neutral sentiment at 50%
+            }
+        };
+
+        const progressBarWidth = getProgressBarWidth(); // Use the output of the function
         // Create a formatted HTML block with the user data
         const formattedData = `
             <div class="w-full h-full flex items-center justify-center" style="background-image: url('data:image/svg+xml,${backgroundPattern}'); background-size: cover; background-repeat: no-repeat;">
@@ -65,6 +82,16 @@ async function POST(request: Request): Promise<Response> {
                 </div>
                 <!-- Tweet Content -->
                 <div class="text-lg text-gray-700 mb-4">${opinion}</div>
+                <!-- Progress Bar for Sentiment Analysis -->
+                <div class="w-full bg-gray-300 rounded-full h-4 mb-4 relative overflow-hidden">
+                  <div class="h-full rounded-full ${
+            sentimentClass === 2
+                ? 'bg-green-500'
+                : sentimentClass === 0
+                    ? 'bg-red-500'
+                    : 'bg-yellow-500'
+        } animate-pulse" style="width: ${progressBarWidth}; transition: width 0.5s ease;"></div>
+                </div>
                 <!-- Tweet Metadata -->
                 <div class="text-sm text-gray-500 mb-6">${gradeLevel} student | Sent from ${device} ${location}</div>
                 <!-- Fake Action Buttons -->
@@ -88,8 +115,8 @@ async function POST(request: Request): Promise<Response> {
             </div>
         `;
 
-        // Ensure the /tmp/opinions directory exists
-        const dirPath = '/tmp/opinions';
+        // Ensure the /tmp/img directory exists
+        const dirPath = '/tmp/img';
         await ensureDirectoryExists(dirPath);
 
         // Get the next available image filename

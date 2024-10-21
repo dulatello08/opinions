@@ -130,6 +130,7 @@ export default function FormContent() {
                     gradeLevel,
                     opinion,
                     nameOption,
+                    sentiment,
                     name: nameOption === 'provide' ? name : 'Anonymous',
                     clientData, // Include client data
                 }),
